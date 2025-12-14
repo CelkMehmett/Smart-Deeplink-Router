@@ -3,6 +3,7 @@
 A simple, elegant Flutter package for deep link routing with guards and redirect memory.
 
 [![pub package](https://img.shields.io/pub/v/smart_deeplink_router.svg)](https://pub.dev/packages/smart_deeplink_router)
+[![GitHub tag](https://img.shields.io/github/v/tag/CelkMehmett/Smart-Deeplink-Router?label=github%20release)](https://github.com/CelkMehmett/Smart-Deeplink-Router/releases)
 
 ## Why this package?
 
@@ -12,11 +13,21 @@ Deep linking in Flutter often requires solving this common problem:
 
 Most routing solutions make this complex. `smart_deeplink_router` solves it with a clean, minimal API.
 
+## What's new (v0.1.0)
+
+- Named-route helpers: `SmartLinkRouter.openNamed(name, params: {...}, query: {...})` for convenient programmatic navigation.
+- Per-route transition support via an optional `transitionBuilder` on `LinkRoute`.
+- Navigation history + back helper: `SmartLinkRouter.history` and `SmartLinkRouter.back()`.
+- Optional persistent redirect memory: call `await RedirectMemory.instance.initialize(persistent: true)` at app startup to persist redirect targets across restarts.
+
+These features keep the public API minimal while adding practical, production-focused capabilities.
+
 ## Features
 
 ✅ **Simple API** - Just routes and guards, nothing more  
 ✅ **Auth Guards** - Protect routes with async authentication checks  
 ✅ **Redirect Memory** - Automatically return to the original destination after login  
+✅ **Persistent Redirect Memory** - Optional SharedPreferences-backed persistence (call initialize)
 ✅ **Path Parameters** - Support for `:id` style parameters  
 ✅ **Query Parameters** - Automatically parsed and passed to builders  
 ✅ **Deep Links** - Works out of the box with Flutter's deep linking  
@@ -197,11 +208,11 @@ RedirectMemory.instance.clear();      // Clear without getting
 
 ## Roadmap
 
-- [ ] Named routes support
-- [ ] Transition animations
+- [x] Named routes support (v0.1.0)
+- [x] Transition animations (per-route transitions, v0.1.0)
 - [ ] Nested navigation
-- [ ] Route history management
-- [ ] Persistent redirect memory (SharedPreferences)
+- [x] Route history management (v0.1.0)
+- [x] Persistent redirect memory (SharedPreferences) (optional, v0.1.0)
 
 ## Contributing
 
