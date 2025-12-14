@@ -194,11 +194,15 @@ class LoginPage extends StatelessWidget {
                 // Simulate login
                 authService.login();
 
+                // Capture navigator before awaiting to avoid using BuildContext
+                // across an async gap (fixes analyzer warning).
+                final navigator = Navigator.of(context);
+
                 // Check if there's a redirect target
                 final redirectTarget = await RedirectMemory.instance.consume();
                 if (redirectTarget != null) {
                   // Navigate to the original target
-                  Navigator.of(context).pushReplacement(
+                  navigator.pushReplacement(
                     MaterialPageRoute(
                       builder: (_) => ProductPage(
                         productId: redirectTarget.pathSegments.last,
@@ -207,7 +211,7 @@ class LoginPage extends StatelessWidget {
                   );
                 } else {
                   // No redirect target, go to home
-                  Navigator.of(context).pushReplacement(
+                  navigator.pushReplacement(
                     MaterialPageRoute(
                       builder: (_) => const HomePage(),
                     ),
