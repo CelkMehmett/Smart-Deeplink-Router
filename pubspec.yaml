@@ -1,0 +1,19 @@
+name: smart_deeplink_router
+description: A simple, elegant Flutter package for deep link routing with guards and redirect memory. Solves deep link + auth + redirect flow with minimal API.
+version: 0.1.0
+repository: https://github.com/mehmetcelik/smart_deeplink_router
+issue_tracker: https://github.com/mehmetcelik/smart_deeplink_router/issues
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+  flutter: '>=3.10.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
