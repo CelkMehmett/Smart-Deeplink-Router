@@ -1,8 +1,3 @@
-/// In-memory storage for redirect targets.
-///
-/// When a user is redirected (e.g., to login), the original destination
-/// is stored here. After successful authentication, the app can retrieve
-/// and navigate to the original target.
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// In-memory (or optionally persistent) storage for redirect targets.
