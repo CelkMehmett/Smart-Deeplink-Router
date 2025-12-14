@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:smart_deeplink_router/smart_deeplink_router.dart';
 
-void main() {
+Future<void> main() async {
+  // Initialize redirect memory (non-persistent by default in example).
+  await RedirectMemory.instance.initialize(persistent: false);
   runApp(const MyApp());
 }
 
@@ -188,12 +190,12 @@ class LoginPage extends StatelessWidget {
             ),
             const SizedBox(height: 32),
             ElevatedButton.icon(
-              onPressed: () {
+              onPressed: () async {
                 // Simulate login
                 authService.login();
 
                 // Check if there's a redirect target
-                final redirectTarget = RedirectMemory.instance.consume();
+                final redirectTarget = await RedirectMemory.instance.consume();
                 if (redirectTarget != null) {
                   // Navigate to the original target
                   Navigator.of(context).pushReplacement(

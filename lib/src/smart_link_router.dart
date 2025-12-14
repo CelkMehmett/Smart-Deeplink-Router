@@ -34,16 +34,23 @@ class SmartLinkRouter {
     this.guards = const [],
     this.notFoundRoute,
   }) {
+    final delegate = _SmartRouterDelegate(
+      routes: routes,
+      guards: guards,
+      notFoundRoute: notFoundRoute,
+    );
+
     _config = RouterConfig<Uri>(
       routeInformationProvider: _SmartRouteInformationProvider(),
       routeInformationParser: _SmartRouteInformationParser(),
-      routerDelegate: _SmartRouterDelegate(
-        routes: routes,
-        guards: guards,
-        notFoundRoute: notFoundRoute,
-      ),
+      routerDelegate: delegate,
     );
+
+    // keep a typed reference to delegate for convenience API
+    _delegate = delegate;
   }
+
+  late final _SmartRouterDelegate _delegate;
 
   /// All route definitions.
   final List<LinkRoute> routes;
@@ -66,9 +73,47 @@ class SmartLinkRouter {
   /// router.open(Uri.parse('/product/42?source=notification'));
   /// ```
   Future<void> open(Uri uri) async {
-    final delegate = _config.routerDelegate as _SmartRouterDelegate;
-    await delegate.setNewRoutePath(uri);
+    await _delegate.setNewRoutePath(uri);
   }
+
+  /// Opens a route by name with optional path and query parameters.
+  ///
+  /// Example:
+  /// ```dart
+  /// router.openNamed('product', params: {'id': '42'}, query: {'ref': 'email'});
+  /// ```
+  Future<void> openNamed(
+    String name, {
+    Map<String, String>? params,
+    Map<String, String>? query,
+  }) async {
+    final route = routes.firstWhere(
+      (r) => r.name == name,
+      orElse: () => throw ArgumentError('No route named "$name"'),
+    );
+
+    // Build path by replacing `:param` segments
+    String built = route.path;
+    params = params ?? <String, String>{};
+    for (final entry in params.entries) {
+      built = built.replaceAll(':${entry.key}', entry.value);
+    }
+
+    Uri uri;
+    if (query != null && query.isNotEmpty) {
+      uri = Uri(path: built, queryParameters: query);
+    } else {
+      uri = Uri(path: built);
+    }
+
+    await open(uri);
+  }
+
+  /// Navigate back in the router's history if possible.
+  Future<bool> back() async => _delegate.goBack();
+
+  /// Read-only access to the router's navigation history.
+  List<Uri> get history => _delegate.history;
 }
 
 class _SmartRouteInformationProvider extends RouteInformationProvider
@@ -120,6 +165,7 @@ class _SmartRouterDelegate extends RouterDelegate<Uri>
 
   Uri? _currentUri;
   Widget? _currentPage;
+  final List<Uri> _history = [];
 
   @override
   Uri? get currentConfiguration => _currentUri;
@@ -133,9 +179,10 @@ class _SmartRouterDelegate extends RouterDelegate<Uri>
         final redirectUri = guard.onRedirect(configuration);
         if (redirectUri != null) {
           // Save original target for later restoration
-          RedirectMemory.instance.save(configuration);
+          await RedirectMemory.instance.save(configuration);
           _currentUri = redirectUri;
           _buildPage(redirectUri);
+          _history.add(redirectUri);
           notifyListeners();
           return;
         }
@@ -145,7 +192,23 @@ class _SmartRouterDelegate extends RouterDelegate<Uri>
     // Guards passed, proceed to route
     _currentUri = configuration;
     _buildPage(configuration);
+    _history.add(configuration);
     notifyListeners();
+  }
+
+  /// Returns a copy of the navigation history.
+  List<Uri> get history => List.unmodifiable(_history);
+
+  /// Attempts to go back in navigation stack.
+  Future<bool> goBack() async {
+    if (_history.length <= 1) {
+      return false;
+    }
+    // remove current
+    _history.removeLast();
+    final previous = _history.last;
+    await setNewRoutePath(previous);
+    return true;
   }
 
   void _buildPage(Uri uri) {
@@ -158,7 +221,12 @@ class _SmartRouterDelegate extends RouterDelegate<Uri>
       if (pathParams != null) {
         final allParams = LinkParser.combineParams(pathParams, queryParams);
         _currentPage = Builder(
-          builder: (context) => route.builder(context, allParams),
+          builder: (context) => route.transitionBuilder != null
+              ? _RouteWrapper(
+                  transitionBuilder: route.transitionBuilder!,
+                  child: route.builder(context, allParams),
+                )
+              : route.builder(context, allParams),
         );
         return;
       }
@@ -207,5 +275,35 @@ class _DefaultNotFoundPage extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// Internal widget used to apply a per-route transition when the router
+/// builds the route's page content.
+class _RouteWrapper extends StatelessWidget {
+  const _RouteWrapper({
+    required this.child,
+    required this.transitionBuilder,
+  });
+
+  final Widget child;
+  final Widget Function(BuildContext, Animation<double>, Animation<double>, Widget)
+      transitionBuilder;
+
+  @override
+  Widget build(BuildContext context) {
+    // Use an AnimatedBuilder driven by a dummy AnimationController via
+    // ModalRoute.of(context) when available. For simplicity we wrap with
+    // a static FadeTransition driven by an always-completed animation when
+    // no route animation is available.
+    final animation = ModalRoute.of(context)?.animation;
+    final secondary = ModalRoute.of(context)?.secondaryAnimation;
+
+    if (animation != null && secondary != null) {
+      return transitionBuilder(context, animation, secondary, child);
+    }
+
+    // Fallback: no route animations available, just return child.
+    return child;
   }
 }

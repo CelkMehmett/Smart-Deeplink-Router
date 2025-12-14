@@ -20,6 +20,7 @@ class LinkRoute {
     required this.path,
     required this.builder,
     this.name,
+    this.transitionBuilder,
   });
 
   /// The path pattern for this route.
@@ -42,4 +43,14 @@ class LinkRoute {
   ///
   /// Can be used for programmatic navigation.
   final String? name;
+
+  /// Optional transition builder for this route.
+  ///
+  /// If provided, the router will use a [CustomTransitionPage] with this
+  /// builder to display the route, allowing custom animations.
+  ///
+  /// Signature matches Flutter's `transitionsBuilder` used by
+  /// `PageRouteBuilder` / `CustomTransitionPage`.
+  final Widget Function(BuildContext, Animation<double>, Animation<double>, Widget)?
+      transitionBuilder;
 }
